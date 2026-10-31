@@ -1,0 +1,44 @@
+# OPCIONAL — Ingress con el add-on "Application Routing" de AKS (NGINX administrado).
+# Requiere: az aks approuting enable -g <rg> -n <cluster>
+# Se aplica con envsubst para inyectar la IP del controlador (hosts nip.io, sin DNS propio):
+#   export INGRESS_IP=$(kubectl get svc nginx -n app-routing-system \
+#       -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+#   envsubst < k8s/40-ingress.yaml | kubectl apply -f -
+# Un Ingress solo enruta a Services de su propio namespace, por eso son dos objetos.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-nginx
+  namespace: web
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+    - host: web.${INGRESS_IP}.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-nginx
+                port:
+                  number: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: azure-vote-front
+  namespace: vote
+spec:
+  ingressClassName: webapprouting.kubernetes.azure.com
+  rules:
+    - host: vote.${INGRESS_IP}.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: azure-vote-front
+                port:
+                  number: 80

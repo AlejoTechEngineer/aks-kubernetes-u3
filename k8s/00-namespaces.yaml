@@ -1,0 +1,43 @@
+# Tres namespaces = tres "dominios" de aplicación con aislamiento lógico.
+# Cada uno aplica un nivel distinto de Pod Security Standards (PSS) según
+# lo que necesita la carga de trabajo (principio de mínimo privilegio).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: web
+  labels:
+    app.kubernetes.io/part-of: aks-u3
+    pod-security.kubernetes.io/enforce: restricted   # nginx sin privilegios cumple "restricted"
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vote
+  labels:
+    app.kubernetes.io/part-of: aks-u3
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted      # avisa qué le falta para "restricted"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data
+  labels:
+    app.kubernetes.io/part-of: aks-u3
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted
+---
+# Cuota por namespace: evita que una app consuma todo el clúster (FinOps + estabilidad)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cuota-web
+  namespace: web
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "4"
+    limits.memory: 4Gi
+    pods: "20"

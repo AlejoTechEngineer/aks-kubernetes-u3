@@ -1,0 +1,172 @@
+# APLICACIÓN 1 — Frontend web sin estado (stateless)
+# Conceptos que demuestra: Deployment, ConfigMap, Service LoadBalancer,
+# probes, requests/limits, securityContext, HPA, PodDisruptionBudget y
+# topologySpreadConstraints (distribución entre nodos).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-nginx-config
+  namespace: web
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        # sub_filter inyecta el nombre del pod en la página: se ve el balanceo
+        sub_filter '__POD__' '$hostname';
+        sub_filter_once off;
+        add_header X-Served-By $hostname always;
+      }
+      location /healthz {
+        access_log off;
+        return 200 "ok\n";
+      }
+    }
+  index.html: |
+    <!doctype html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <title>AKS · Unidad 3</title>
+      <style>
+        body{font-family:system-ui,sans-serif;background:#0b3558;color:#fff;
+             display:grid;place-items:center;height:100vh;margin:0}
+        .card{background:#124a78;padding:2.5rem 3.5rem;border-radius:16px;text-align:center}
+        code{background:#0b3558;padding:.3rem .7rem;border-radius:8px;font-size:1.2rem}
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>Contenerización de Aplicaciones de Software</h1>
+        <p>Desplegado en <strong>Azure Kubernetes Service</strong></p>
+        <p>Atendido por el pod: <code>__POD__</code></p>
+      </div>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-nginx
+  namespace: web
+  labels:
+    app.kubernetes.io/name: web-nginx
+    app.kubernetes.io/part-of: aks-u3
+spec:
+  replicas: 3
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0        # cero downtime durante actualizaciones
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web-nginx
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: web-nginx
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.27
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: config
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+      volumes:
+        - name: config
+          configMap:
+            name: web-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-nginx
+  namespace: web
+spec:
+  type: LoadBalancer          # AKS aprovisiona un Azure Load Balancer + IP pública
+  selector:
+    app.kubernetes.io/name: web-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web-nginx
+  namespace: web
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web-nginx
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60   # reduce el tiempo de espera para la demo
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-nginx
+  namespace: web
+spec:
+  minAvailable: 2             # protege la disponibilidad en upgrades de nodos
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web-nginx
