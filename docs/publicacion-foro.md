@@ -9,7 +9,7 @@
 
 Estimados compañeros y tutor:
 
-Para la actividad de la Unidad 3 seleccioné **Azure Kubernetes Service (AKS)**, el servicio de orquestación Kubernetes administrado de Microsoft Azure. En el video (≈ [XX] minutos) analizo su funcionamiento y demuestro el despliegue de **tres cargas de trabajo distintas** sobre un mismo clúster:
+Para la actividad de la Unidad 3 seleccioné **Azure Kubernetes Service (AKS)**, el servicio de orquestación Kubernetes administrado de Microsoft Azure. En el video analizo su funcionamiento y demuestro el despliegue de **tres cargas de trabajo distintas** sobre un mismo clúster:
 
 1. **Aplicación web sin estado** (nginx): Deployment, Service `LoadBalancer`, ConfigMap, probes, autoescalado horizontal (HPA) y PodDisruptionBudget.
 2. **Microservicios** (mini-aplicación propia de votación: frontend en Python sobre `python:3.12-alpine` + Redis): descubrimiento de servicios por DNS interno y escalado independiente.
@@ -17,8 +17,8 @@ Para la actividad de la Unidad 3 seleccioné **Azure Kubernetes Service (AKS)**,
 
 Además muestro operación "día 2": autocuración, *rolling update* sin downtime, *rollback*, HPA y autoescalado de nodos.
 
-**🎥 Video:** [ENLACE PÚBLICO DEL VIDEO]
-**📦 Repositorio con manifiestos y scripts reproducibles:** [ENLACE AL REPOSITORIO]
+**🎥 Video:** https://youtu.be/Cu-VVzfo1dg
+**📦 Repositorio con manifiestos y scripts reproducibles:** https://github.com/AlejoTechEngineer/aks-kubernetes-u3
 
 ### Ideas centrales del análisis
 

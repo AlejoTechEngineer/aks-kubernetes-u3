@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Crea el clúster AKS de la demo (Unidad 3 - Contenerización de Aplicaciones de Software).
 # Requisitos: Azure CLI autenticado (az login) y kubectl instalado.
+# Cupo: las suscripciones de prueba suelen tener 4 vCPU por región (2 nodos de 2 vCPU), por eso el máximo es 2.
 # Nota: los flags de `az aks create` evolucionan; ante un error revisa `az aks create --help`.
 set -euo pipefail
 
 RG="${RG:-rg-aks-u3-demo}"
 LOCATION="${LOCATION:-eastus2}"
 CLUSTER="${CLUSTER:-aks-u3-demo}"
-NODE_SIZE="${NODE_SIZE:-Standard_B2s}"   # si hay error de cuota/SKU: Standard_D2s_v5
+NODE_SIZE="${NODE_SIZE:-Standard_D2s_v6}"   # B2s no está permitido en suscripciones de prueba nuevas
 
 echo ">> Resource group: $RG ($LOCATION)"
 az group create --name "$RG" --location "$LOCATION" --output none
@@ -20,7 +21,7 @@ az aks create \
   --tier free \
   --node-count 2 \
   --node-vm-size "$NODE_SIZE" \
-  --enable-cluster-autoscaler --min-count 2 --max-count 4 \
+  --enable-cluster-autoscaler --min-count 2 --max-count 2 \
   --network-plugin azure --network-plugin-mode overlay \
   --enable-managed-identity \
   --enable-oidc-issuer --enable-workload-identity \

@@ -33,7 +33,7 @@ kubectl rollout status deployment/web-nginx -n web
 paso "6) HPA: generar carga y observar el autoescalado (abre otra terminal con 'kubectl get hpa -n web -w')"
 kubectl create deployment load-gen --image=busybox:1.36 --replicas=3 -- \
   /bin/sh -c 'while true; do wget -q -O- http://web-nginx.web.svc.cluster.local/ >/dev/null; done'
-echo "   Observa: kubectl get hpa,pods -n web -w   (el HPA tarda ~1-2 min en reaccionar)"
+echo "   Observa: watch -n 2 kubectl get hpa,pods -n web   (el HPA tarda ~1-2 min en reaccionar)"
 read -r -p "   [Enter cuando termines de mostrar el escalado para detener la carga] " _
 kubectl delete deployment load-gen
 echo "OK Demos completadas."

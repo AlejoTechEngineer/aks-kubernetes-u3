@@ -14,6 +14,8 @@
 [![Demos](https://img.shields.io/badge/Demos%20Day--2-6%20escenarios-2EA44F.svg)]()
 [![Status](https://img.shields.io/badge/Status-Funcional-success.svg)]()
 
+🎥 **Video de la demostración:** https://youtu.be/Cu-VVzfo1dg
+
 **[Contexto](#-contexto-y-alcance) • [Contenido](#-contenido-del-repositorio) • [Tecnologías](#-tecnologías-utilizadas) • [Arquitectura](#-arquitectura) • [Ejecución](#-ejecución) • [Demos](#-demos-operativas) • [Autor](#-autor)**
 
 <img src="https://img.shields.io/badge/Kubernetes-AKS-326CE5?style=flat-square&logo=kubernetes&logoColor=white" alt="Kubernetes"/>
@@ -58,7 +60,7 @@ En vez de desplegar una sola aplicación de ejemplo, se despliegan **tres cargas
 
 - ☸️ **Tres patrones de carga** en un mismo clúster: stateless (NGINX), microservicios (frontend + Redis) y stateful (PostgreSQL).
 - 🔐 **Seguridad por namespace** con Pod Security Standards (`restricted` / `baseline`), contenedores sin root y `capabilities` eliminadas.
-- 📈 **Escalado automático** en dos niveles: HPA para pods (3 a 10 réplicas) y Cluster Autoscaler para nodos (2 a 4).
+- 📈 **Escalado automático** en dos niveles: HPA para pods (3 a 10 réplicas) y Cluster Autoscaler para nodos (fijado en 2 por el cupo de la suscripción de prueba).
 - 💾 **Persistencia real**: un dato escrito en PostgreSQL sobrevive al borrado del pod gracias a un Azure Managed Disk.
 - 🔄 **Rolling update sin downtime** (`maxUnavailable: 0`) y **rollback** a la revisión anterior.
 - 🔑 **Sin secretos en el repositorio**: la contraseña de PostgreSQL se genera al vuelo en el despliegue.
@@ -235,7 +237,7 @@ sequenceDiagram
     participant N as Node pool
     participant LB as Azure Load Balancer
     U->>AZ: 01-crear-cluster.sh
-    AZ->>API: az aks create (Free, 2 nodos, autoscaler 2-4)
+    AZ->>API: az aks create (Free, 2 nodos Standard_D2s_v6)
     AZ-->>U: az aks get-credentials
     U->>API: 02-desplegar.sh (kubectl apply)
     API->>N: Programa pods de web, vote y data
@@ -256,7 +258,7 @@ sequenceDiagram
 | **Investigar** su funcionamiento, componentes y características diferenciadoras | Diagrama de arquitectura, `docs/comparativa-aks-eks-gke.md` y video |
 | **Analizar** ventajas y desventajas del servicio | Matriz técnica y matriz de decisión ponderada en `docs/comparativa-aks-eks-gke.md` |
 | **Mostrar ejemplos de despliegue de diferentes aplicaciones** | Tres apps en `k8s/` (stateless, microservicios y stateful) desplegadas con `scripts/02-desplegar.sh` |
-| **Video** de mínimo 10 minutos | `docs/guion-video.md` y demos de `scripts/03-demos-operativos.sh` |
+| **Video** de mínimo 10 minutos | [Video en YouTube](https://youtu.be/Cu-VVzfo1dg), `docs/guion-video.md` y demos de `scripts/03-demos-operativos.sh` |
 | **Comentar** el trabajo de los compañeros con justificación | `docs/comentarios-companeros.md` |
 | **Mapa mental** con los servicios seleccionados por todos | `docs/mapa-mental.md` |
 
@@ -310,7 +312,9 @@ Las apps quedan en `web.<IP>.nip.io` y `vote.<IP>.nip.io`, sin necesidad de un D
 | 🛠️ Demos Day-2 | `./scripts/03-demos-operativos.sh` |
 | 🧹 Eliminar todo | `./scripts/99-limpiar.sh` |
 
-> 💡 Los flags de `az aks create` evolucionan; si un parámetro falla, revisa `az aks create --help`. Si hay error de cuota o SKU con `Standard_B2s`, usa `NODE_SIZE=Standard_D2s_v5`.
+> 💡 Los flags de `az aks create` evolucionan; si un parámetro falla, revisa `az aks create --help`. Si hay error de cuota o SKU, cambia `NODE_SIZE` o la región.
+
+> ℹ️ El clúster usa **2 nodos `Standard_D2s_v6`** porque las suscripciones de prueba tienen un cupo de 4 vCPU por región y no permiten `Standard_B2s`.
 
 ---
 
@@ -365,7 +369,7 @@ El StatefulSet recrea el pod con el **mismo nombre** y lo vuelve a enlazar con e
 
 ## 💰 Costos
 
-El clúster se crea en el nivel **Free** (sin costo de gestión del plano de control) con 2 nodos pequeños. Aun así, los nodos, los discos, las IPs públicas y Log Analytics sí generan costo mientras existan.
+El clúster se crea en el nivel **Free** (sin costo de gestión del plano de control) con 2 nodos `Standard_D2s_v6`. Aun así, los nodos, los discos, las IPs públicas y Log Analytics sí generan costo mientras existan.
 
 > ⚠️ **Ejecuta `./scripts/99-limpiar.sh` al terminar.** Elimina el resource group completo (clúster, discos, IPs y Log Analytics).
 
