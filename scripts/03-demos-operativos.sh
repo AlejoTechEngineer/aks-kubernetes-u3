@@ -3,7 +3,7 @@
 # Cada paso espera un Enter para que puedas narrar antes de ejecutar.
 set -euo pipefail
 
-paso() { echo; echo "▶ $*"; read -r -p "   [Enter para ejecutar] " _; }
+paso() { echo; echo ">> $*"; read -r -p "   [Enter para ejecutar] " _; }
 
 paso "1) Autocuración: eliminar un pod y ver cómo el ReplicaSet lo recrea"
 POD=$(kubectl get pods -n web -o jsonpath='{.items[0].metadata.name}')
@@ -36,4 +36,4 @@ kubectl create deployment load-gen --image=busybox:1.36 --replicas=3 -- \
 echo "   Observa: kubectl get hpa,pods -n web -w   (el HPA tarda ~1-2 min en reaccionar)"
 read -r -p "   [Enter cuando termines de mostrar el escalado para detener la carga] " _
 kubectl delete deployment load-gen
-echo "✔ Demos completadas."
+echo "OK Demos completadas."

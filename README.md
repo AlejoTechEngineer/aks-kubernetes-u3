@@ -24,6 +24,7 @@ Maestría en Arquitectura de Software · Politécnico Grancolombiano
 - `scripts/03-demos-operativos.sh` → Autocuración, escalado, persistencia, rolling update, rollback y HPA
 - `scripts/99-limpiar.sh` → Elimina el resource group completo (evita costos residuales)
 - `docs/guion-video.md` → Guion minuto a minuto del video (solo pantalla y voz)
+- `docs/narracion-video.md` → Texto completo de la narración del video, listo para leer
 - `docs/publicacion-foro.md` → Texto de la publicación para el foro
 - `docs/comentarios-companeros.md` → Guía y banco de argumentos para comentar y responder
 - `docs/mapa-mental.md` → Mapa mental de los servicios (Mermaid) y método para completarlo

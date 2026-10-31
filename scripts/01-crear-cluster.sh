@@ -9,10 +9,10 @@ LOCATION="${LOCATION:-eastus2}"
 CLUSTER="${CLUSTER:-aks-u3-demo}"
 NODE_SIZE="${NODE_SIZE:-Standard_B2s}"   # si hay error de cuota/SKU: Standard_D2s_v5
 
-echo "▶ Resource group: $RG ($LOCATION)"
+echo ">> Resource group: $RG ($LOCATION)"
 az group create --name "$RG" --location "$LOCATION" --output none
 
-echo "▶ Creando clúster AKS (tarda ~5-10 min, conviene crearlo ANTES de grabar)..."
+echo ">> Creando clúster AKS (tarda ~5-10 min, conviene crearlo ANTES de grabar)..."
 az aks create \
   --resource-group "$RG" \
   --name "$CLUSTER" \
@@ -27,8 +27,8 @@ az aks create \
   --enable-addons monitoring \
   --generate-ssh-keys
 
-echo "▶ Credenciales de kubectl"
+echo ">> Credenciales de kubectl"
 az aks get-credentials --resource-group "$RG" --name "$CLUSTER" --overwrite-existing
 
 kubectl get nodes -o wide
-echo "✔ Clúster listo. Recuerda ejecutar scripts/99-limpiar.sh al terminar para no generar costos."
+echo "OK Clúster listo. Recuerda ejecutar scripts/99-limpiar.sh al terminar para no generar costos."
