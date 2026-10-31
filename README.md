@@ -46,6 +46,7 @@ Versiones: [4K (3840x2160)](docs/img/arquitectura-4k.png) · [SVG](docs/img/arqu
 <summary>Diagrama original en Mermaid</summary>
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Calibri, Arial, sans-serif", "fontSize": "16px", "lineColor": "#2E4A6B", "edgeLabelBackground": "#FFFFFF", "primaryTextColor": "#111111"}}}%%
 flowchart TB
     dev["Ingeniero<br/>kubectl · az cli"] --> api
 
@@ -74,17 +75,31 @@ flowchart TB
             end
         end
 
-        lb1["Azure Load Balancer<br/>IP pública"]
+        lb["Azure Load Balancer<br/>IP pública"]
         disk[("Azure Managed Disk<br/>managed-csi")]
         mon["Azure Monitor<br/>Container Insights"]
     end
 
     api --> DP
-    user(("Usuario")) --> lb1
-    lb1 --> web
-    lb1 --> front
+    user(("Usuario")) --> lb
+    lb --> web
+    lb --> front
     pg --- disk
     DP -. "métricas y logs" .-> mon
+
+    classDef nodo fill:#FFFFFF,stroke:#2E4A6B,stroke-width:2px,color:#111111;
+    classDef azure fill:#FDE9E7,stroke:#B04A3F,stroke-width:2px,color:#111111;
+    classDef actor fill:#FFF4D6,stroke:#B8860B,stroke-width:2px,color:#111111;
+    class api,etcd,sch,cm,web,front,back,pg nodo
+    class lb,disk,mon azure
+    class dev,user actor
+
+    style Azure fill:#FFFFFF,stroke:#71A0DC,stroke-width:2px,color:#2E4A6B
+    style CP fill:#DDE8F4,stroke:#2E4A6B,stroke-width:2px,color:#2E4A6B
+    style DP fill:#F3F8EE,stroke:#4F7F3A,stroke-width:2px,color:#2F5A1F
+    style NW fill:#FFFFFF,stroke:#4F7F3A,stroke-width:2px,color:#2F5A1F
+    style NV fill:#FFFFFF,stroke:#4F7F3A,stroke-width:2px,color:#2F5A1F
+    style ND fill:#FFFFFF,stroke:#4F7F3A,stroke-width:2px,color:#2F5A1F
 ```
 
 </details>
