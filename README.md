@@ -16,7 +16,7 @@ Maestría en Arquitectura de Software · Politécnico Grancolombiano
 - `README.md` → Este documento: visión general, arquitectura y guía de ejecución
 - `k8s/00-namespaces.yaml` → Namespaces con Pod Security Standards y cuota de recursos
 - `k8s/10-web-nginx.yaml` → App 1: web stateless (ConfigMap, Deployment, Service LoadBalancer, HPA, PDB)
-- `k8s/20-azure-vote.yaml` → App 2: microservicios frontend + Redis con descubrimiento por DNS
+- `k8s/20-azure-vote.yaml` → App 2: microservicios con una mini-aplicación propia de votación (frontend en Python sobre `python:3.12-alpine`, código montado desde un ConfigMap) + Redis, con descubrimiento por DNS
 - `k8s/30-postgres-statefulset.yaml` → App 3: PostgreSQL con StatefulSet y volumen persistente (Azure Disk)
 - `k8s/40-ingress.yaml` → Ingress opcional con el add-on Application Routing
 - `scripts/01-crear-cluster.sh` → Crea el resource group y el clúster AKS

@@ -1,9 +1,6 @@
-# APLICACIÓN 2 — Microservicios: frontend + Redis (Azure Vote, ejemplo oficial de Microsoft)
-# Conceptos que demuestra: comunicación entre servicios por DNS interno
-# (azure-vote-back.vote.svc.cluster.local), Services ClusterIP vs LoadBalancer,
-# escalado independiente de cada microservicio.
-# Nota: verifica que las imágenes sigan vigentes en el quickstart oficial de AKS
-# antes de grabar (las etiquetas pueden cambiar con el tiempo).
+# APLICACIÓN 2 — Microservicios: frontend (Python) + Redis
+# El frontend original de Microsoft (azure-vote-front:v1) ya no existe en el registro,
+# por eso se usa una mini-app propia sobre python:3.12-alpine (solo librería estándar).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,18 +23,14 @@ spec:
         - name: redis
           image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
           env:
-            - name: ALLOW_EMPTY_PASSWORD     # solo para demo; en producción usar Secret + Key Vault
+            - name: ALLOW_EMPTY_PASSWORD
               value: "yes"
           ports:
             - name: redis
               containerPort: 6379
           resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 250m
-              memory: 256Mi
+            requests: { cpu: 100m, memory: 128Mi }
+            limits: { cpu: 250m, memory: 256Mi }
 ---
 apiVersion: v1
 kind: Service
@@ -45,13 +38,102 @@ metadata:
   name: azure-vote-back
   namespace: vote
 spec:
-  type: ClusterIP              # solo accesible dentro del clúster
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: azure-vote-back
   ports:
     - name: redis
       port: 6379
       targetPort: redis
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azure-vote-front-app
+  namespace: vote
+data:
+  app.py: |
+    import os, socket
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    from urllib.parse import parse_qs
+
+    REDIS_HOST = os.environ.get("REDIS", "azure-vote-back")
+    OPTIONS = ["AKS", "EKS", "GKE"]
+    POD = socket.gethostname()
+
+    def resp(*parts):
+        msg = "*%d\r\n" % len(parts)
+        for p in parts:
+            p = str(p)
+            msg += "$%d\r\n%s\r\n" % (len(p.encode()), p)
+        return msg.encode()
+
+    def redis_cmd(*parts):
+        with socket.create_connection((REDIS_HOST, 6379), timeout=2) as s:
+            s.sendall(resp(*parts))
+            f = s.makefile("rb")
+            line = f.readline().rstrip(b"\r\n")
+            if line.startswith(b"$"):
+                n = int(line[1:])
+                return None if n < 0 else f.read(n).decode()
+            if line.startswith(b":"):
+                return int(line[1:])
+            if line.startswith(b"-"):
+                raise RuntimeError(line.decode())
+            return line[1:].decode()
+
+    class H(BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def send(self, code, body, ctype="text/html; charset=utf-8"):
+            data = body.encode()
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("X-Served-By", POD)
+            self.end_headers()
+            self.wfile.write(data)
+
+        def page(self):
+            rows, error = "", ""
+            for o in OPTIONS:
+                try:
+                    n = redis_cmd("GET", "votos:" + o) or "0"
+                except Exception:
+                    n, error = "?", "Redis no responde"
+                rows += ('<form method="post" action="/vote"><button name="opcion" value="%s" '
+                         'style="font-size:1.2rem;margin:.4rem">Votar %s</button> <b>%s</b></form>' % (o, o, n))
+            err = '<p style="color:#ffb4a9">%s</p>' % error if error else ""
+            return ("<!doctype html><html lang='es'><meta charset='utf-8'><title>Votación AKS</title>"
+                    "<body style='font-family:system-ui;background:#0b3558;color:#fff;text-align:center;padding:2rem'>"
+                    "<h1>Qué servicio Kubernetes prefieres?</h1>" + rows + err +
+                    "<p>Atendido por el pod: <code>%s</code></p></body></html>" % POD)
+
+        def do_GET(self):
+            if self.path == "/healthz":
+                self.send(200, "ok", "text/plain")
+            elif self.path in ("/", "/index.html"):
+                self.send(200, self.page())
+            else:
+                self.send(404, "no encontrado", "text/plain")
+
+        def do_POST(self):
+            if self.path != "/vote":
+                return self.send(404, "no encontrado", "text/plain")
+            n = min(int(self.headers.get("Content-Length", "0") or 0), 200)
+            o = parse_qs(self.rfile.read(n).decode()).get("opcion", [""])[0]
+            if o in OPTIONS:
+                try:
+                    redis_cmd("INCR", "votos:" + o)
+                except Exception:
+                    pass
+            self.send_response(303)
+            self.send_header("Location", "/")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+
+    ThreadingHTTPServer(("", 8080), H).serve_forever()
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,28 +153,45 @@ spec:
       labels:
         app.kubernetes.io/name: azure-vote-front
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: azure-vote-front
-          image: mcr.microsoft.com/azuredocs/azure-vote-front:v1
+          image: python:3.12-alpine
+          command: ["python", "/app/app.py"]
           env:
             - name: REDIS
-              value: azure-vote-back   # resolución por DNS del Service
+              value: azure-vote-back
+            - name: PYTHONUNBUFFERED
+              value: "1"
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 250m
-              memory: 256Mi
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 250m, memory: 256Mi }
           readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 5
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 3
             periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          volumeMounts:
+            - name: app
+              mountPath: /app
+      volumes:
+        - name: app
+          configMap:
+            name: azure-vote-front-app
 ---
 apiVersion: v1
 kind: Service

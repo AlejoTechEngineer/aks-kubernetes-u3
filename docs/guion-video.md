@@ -26,7 +26,7 @@
 | 03:00–05:30 | 3. Características diferenciadoras | Portal de Azure (panel del clúster) |
 | 05:30–07:00 | 4. Creación del clúster | `01-crear-cluster.sh` + asistente del portal |
 | 07:00–09:00 | 5. App 1 · Web stateless (nginx) | Terminal + navegador |
-| 09:00–10:30 | 6. App 2 · Microservicios (Azure Vote) | Terminal + navegador |
+| 09:00–10:30 | 6. App 2 · Microservicios (votación propia: Python + Redis) | Terminal + navegador |
 | 10:30–12:00 | 7. App 3 · Base de datos stateful (PostgreSQL) | Terminal + portal (disco) |
 | 12:00–14:30 | 8. Operación Day-2 | `03-demos-operativos.sh` |
 | 14:30–15:30 | 9. Observabilidad y seguridad | Portal: Insights, Policy, RBAC |
@@ -111,7 +111,7 @@ kubectl exec -n vote deploy/azure-vote-front -- sh -c "getent hosts azure-vote-b
 ```
 
 **Narrar:**
-- Dos microservicios con responsabilidades distintas: **frontend** (Service `LoadBalancer`) y **backend Redis** (Service `ClusterIP`, solo interno).
+- Dos microservicios con responsabilidades distintas: **frontend** propio en Python sobre `python:3.12-alpine` (Service `LoadBalancer`) y **backend Redis** (Service `ClusterIP`, solo interno).
 - **Descubrimiento de servicios por DNS**: el front encuentra a Redis con el nombre `azure-vote-back` — sin IPs, sin configuración manual.
 - Escalado **independiente**: `kubectl scale deploy/azure-vote-front -n vote --replicas=4` → se relaciona con la ventaja de microservicios vista en la Unidad 1 (escalar solo lo que lo necesita).
 - Votar en la app 3–4 veces para mostrar que funciona.
@@ -185,7 +185,7 @@ Mostrar tabla de `docs/comparativa-aks-eks-gke.md` y narrar con equilibrio:
 | Problema | Solución |
 |---|---|
 | EXTERNAL-IP en `<pending>` > 3 min | Cuota de IPs públicas: usar `kubectl port-forward svc/web-nginx -n web 8080:80` |
-| Pod en `ImagePullBackOff` | Verificar nombre/tag de la imagen y salida a internet; usar la imagen alternativa indicada en el YAML |
+| Pod en `ImagePullBackOff` | Verificar nombre/tag de la imagen y salida a internet; en la App 2 el frontend usa `python:3.12-alpine` (la imagen `azure-vote-front:v1` ya no existe en el registro) |
 | PVC en `Pending` | `kubectl describe pvc -n data`; verificar `kubectl get storageclass` |
 | HPA muestra `<unknown>` | Esperar 1–2 min (metrics-server) y confirmar `resources.requests` definidos |
 | Error de cuota de VM | Cambiar `NODE_SIZE` (p. ej. `Standard_D2s_v5`) o región |
