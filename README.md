@@ -314,7 +314,7 @@ Las apps quedan en `web.<IP>.nip.io` y `vote.<IP>.nip.io`, sin necesidad de un D
 
 > 💡 Los flags de `az aks create` evolucionan; si un parámetro falla, revisa `az aks create --help`. Si hay error de cuota o SKU, cambia `NODE_SIZE` o la región.
 
-> ℹ️ El clúster usa **2 nodos `Standard_D2s_v6`** porque las suscripciones de prueba tienen un cupo de 4 vCPU por región y no permiten `Standard_B2s`.
+> ℹ️ El clúster usa **2 nodos fijos `Standard_D2s_v6`** (`--max-count 2`) porque la suscripción de prueba tiene un cupo de 4 vCPU por región y `Standard_B2s` no estaba permitido en esa región.
 
 ---
 
@@ -329,7 +329,7 @@ Las apps quedan en `web.<IP>.nip.io` y `vote.<IP>.nip.io`, sin necesidad de un D
 | 3 | **Persistencia** | Se escribe una fila en PostgreSQL y se borra `postgres-0` | El pod vuelve con el mismo disco y la fila sigue ahí |
 | 4 | **Rolling update** | Cambio de imagen a `nginx-unprivileged:1.27-alpine` | Los pods se reemplazan uno a uno, sin downtime |
 | 5 | **Rollback** | `kubectl rollout undo` | Se vuelve a la revisión anterior |
-| 6 | **HPA** | Un generador de carga con 3 réplicas de BusyBox | El HPA sube réplicas al pasar el 50 % de CPU (tarda ~1–2 min) |
+| 6 | **HPA** | Se baja temporalmente el objetivo de CPU (a mano, con `kubectl patch`; ver `docs/guion-video.md`) y se lanza un generador de carga con 3 réplicas de BusyBox | El HPA sube réplicas en pocos segundos; el manifiesto conserva 50 % y se restaura con `kubectl apply` |
 
 <details>
 <summary><b>🔍 Ver la verificación de persistencia</b></summary>
@@ -362,7 +362,7 @@ El StatefulSet recrea el pod con el **mismo nombre** y lo vuelve a enlazar con e
 | 📏 **Requests y limits** en todos los contenedores | Todos los manifiestos |
 | 🔑 **Secret generado al vuelo** con `openssl rand`; nunca se versiona | `scripts/02-desplegar.sh` |
 | 🧭 **Descubrimiento por DNS interno**: el frontend encuentra a Redis por el nombre del Service | `k8s/20-azure-vote.yaml` |
-| 🐍 **Frontend propio** porque la imagen original `azure-vote-front:v1` ya no está disponible | ConfigMap `azure-vote-front-app` |
+| 🐍 **Mini-aplicación propia** en Python sobre `python:3.12-alpine` más Redis, porque la imagen `azure-vote-front:v1` ya no existe | ConfigMap `azure-vote-front-app` |
 | 💾 **`PGDATA` en una subcarpeta** porque el Azure Disk trae `lost+found` en la raíz | `k8s/30-postgres-statefulset.yaml` |
 
 ---

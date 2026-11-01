@@ -15,7 +15,7 @@ Para la actividad de la Unidad 3 seleccioné **Azure Kubernetes Service (AKS)**,
 2. **Microservicios** (mini-aplicación propia de votación: frontend en Python sobre `python:3.12-alpine` + Redis): descubrimiento de servicios por DNS interno y escalado independiente.
 3. **Base de datos con estado** (PostgreSQL): StatefulSet con volumen persistente sobre Azure Disk y prueba de supervivencia a reinicios.
 
-Además muestro operación "día 2": autocuración, *rolling update* sin downtime, *rollback*, HPA y autoescalado de nodos.
+Además muestro operación "día 2": autocuración, escalado, persistencia, *rolling update* sin downtime, *rollback* y autoescalado de pods con HPA. El clúster usa 2 nodos fijos `Standard_D2s_v6` por el cupo de 4 vCPU de la suscripción de prueba.
 
 **🎥 Video:** https://youtu.be/Cu-VVzfo1dg
 **📦 Repositorio con manifiestos y scripts reproducibles:** https://github.com/AlejoTechEngineer/aks-kubernetes-u3

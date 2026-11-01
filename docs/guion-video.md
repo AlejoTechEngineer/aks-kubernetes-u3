@@ -79,7 +79,8 @@
 
 **Narración (explicar cada parámetro clave):**
 - `--tier free` → control plane sin costo ni SLA (demo); en producción `--tier standard`.
-- `--node-count 2` + `--enable-cluster-autoscaler --min-count 2 --max-count 4` → capacidad elástica de nodos.
+- `--node-count 2` + `--enable-cluster-autoscaler --min-count 2 --max-count 2` → 2 nodos fijos.
+- `--node-vm-size Standard_D2s_v6` → la suscripción de prueba tiene un cupo de 4 vCPU por región (2 nodos de 2 vCPU) y `Standard_B2s` no estaba permitido en la región; por eso el máximo es 2. En una suscripción con más cupo basta con subir `--max-count` para que el Cluster Autoscaler añada nodos.
 - `--network-plugin azure --network-plugin-mode overlay` → Azure CNI Overlay: los pods usan un rango privado y **no consumen IPs de la VNet**.
 - `--enable-oidc-issuer --enable-workload-identity` → base para identidades sin secretos.
 - `--enable-addons monitoring` → Container Insights.
@@ -107,11 +108,11 @@ kubectl get svc -n web web-nginx -w      # esperar la EXTERNAL-IP
 ```bash
 kubectl apply -f k8s/20-azure-vote.yaml
 kubectl get pods,svc -n vote
-kubectl exec -n vote deploy/azure-vote-front -- sh -c "getent hosts azure-vote-back || nslookup azure-vote-back"
+kubectl exec -n vote deploy/azure-vote-front -- python -c "import socket; print(socket.gethostbyname('azure-vote-back'))"
 ```
 
 **Narrar:**
-- Dos microservicios con responsabilidades distintas: **frontend** propio en Python sobre `python:3.12-alpine` (Service `LoadBalancer`) y **backend Redis** (Service `ClusterIP`, solo interno).
+- Dos microservicios con responsabilidades distintas: **frontend** de una mini-aplicación propia en Python sobre `python:3.12-alpine` (Service `LoadBalancer`) y **backend Redis** (Service `ClusterIP`, solo interno).
 - **Descubrimiento de servicios por DNS**: el front encuentra a Redis con el nombre `azure-vote-back` — sin IPs, sin configuración manual.
 - Escalado **independiente**: `kubectl scale deploy/azure-vote-front -n vote --replicas=4` → se relaciona con la ventaja de microservicios vista en la Unidad 1 (escalar solo lo que lo necesita).
 - Votar en la app 3–4 veces para mostrar que funciona.
@@ -139,7 +140,12 @@ Ejecutar `scripts/03-demos-operativos.sh` y narrar cada paso:
 3. **Persistencia** — insertar fila en PostgreSQL, matar `postgres-0`, verificar que el dato sobrevive.
 4. **Rolling update** — cambiar imagen sin downtime (`maxUnavailable: 0`); `rollout history`.
 5. **Rollback** — `kubectl rollout undo`.
-6. **HPA** — generar carga; mostrar `kubectl get hpa -n web -w` subiendo de 3 réplicas hacia arriba. Si no hay recursos en los nodos, los pods quedan *Pending* y el **Cluster Autoscaler** añade un nodo (muy buen momento para explicar la diferencia entre HPA y Cluster Autoscaler).
+6. **HPA** — antes de generar carga se baja **temporalmente** el objetivo de CPU para que la reacción se vea en pocos segundos (el manifiesto conserva 50 %):
+   ```bash
+   kubectl patch hpa web-nginx -n web --type=json -p='[{"op":"replace","path":"/spec/metrics/0/resource/target/averageUtilization","value":10}]'
+   ```
+   Generar carga y mostrar `watch -n 2 kubectl get hpa,pods -n web` subiendo de 3 réplicas hacia arriba. Al terminar, restaurar el 50 % con `kubectl apply -f k8s/10-web-nginx.yaml`.
+   Si las réplicas nuevas no caben, quedan en *Pending*: con el clúster fijo en 2 nodos el Cluster Autoscaler no puede añadir más (buen momento para explicar la diferencia entre HPA, que escala pods, y Cluster Autoscaler, que escala nodos).
 
 > ⏱️ Si el HPA tarda, corta el video en edición (o narra el concepto mientras espera ~1–2 min).
 
@@ -188,4 +194,4 @@ Mostrar tabla de `docs/comparativa-aks-eks-gke.md` y narrar con equilibrio:
 | Pod en `ImagePullBackOff` | Verificar nombre/tag de la imagen y salida a internet; en la App 2 el frontend usa `python:3.12-alpine` (la imagen `azure-vote-front:v1` ya no existe en el registro) |
 | PVC en `Pending` | `kubectl describe pvc -n data`; verificar `kubectl get storageclass` |
 | HPA muestra `<unknown>` | Esperar 1–2 min (metrics-server) y confirmar `resources.requests` definidos |
-| Error de cuota de VM | Cambiar `NODE_SIZE` (p. ej. `Standard_D2s_v5`) o región |
+| Error de cuota de VM o SKU no permitido | Usar `Standard_D2s_v6` (por defecto) y `--max-count 2`: la suscripción de prueba tiene 4 vCPU por región y no permite `Standard_B2s`; si persiste, cambiar de región |

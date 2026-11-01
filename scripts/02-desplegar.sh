@@ -9,7 +9,7 @@ kubectl apply -f k8s/00-namespaces.yaml
 echo ">> App 1: web nginx (stateless)"
 kubectl apply -f k8s/10-web-nginx.yaml
 
-echo ">> App 2: Azure Vote (microservicios)"
+echo ">> App 2: votación (microservicios: Python + Redis)"
 kubectl apply -f k8s/20-azure-vote.yaml
 
 echo ">> App 3: PostgreSQL (stateful)"
