@@ -86,7 +86,6 @@ En vez de desplegar una sola aplicación de ejemplo, se despliegan **tres cargas
   <tr><td><code>03-demos-operativos.sh</code></td><td>🛠️ Autocuración, escalado, persistencia, rolling update, rollback y HPA</td></tr>
   <tr><td><code>99-limpiar.sh</code></td><td>🧹 Elimina el resource group completo (evita costos residuales)</td></tr>
   <tr><td colspan="2"><b>📂 docs/</b></td></tr>
-  <tr><td><code>guion-video.md</code></td><td>🎬 Guion minuto a minuto del video</td></tr>
   <tr><td><code>publicacion-foro.md</code></td><td>💬 Texto de la publicación para el foro</td></tr>
   <tr><td><code>comentarios-companeros.md</code></td><td>🗣️ Guía y banco de argumentos para comentar y responder</td></tr>
   <tr><td><code>mapa-mental.md</code></td><td>🧠 Mapa mental de los servicios (Mermaid) y método para completarlo</td></tr>
@@ -258,7 +257,7 @@ sequenceDiagram
 | **Investigar** su funcionamiento, componentes y características diferenciadoras | Diagrama de arquitectura, `docs/comparativa-aks-eks-gke.md` y video |
 | **Analizar** ventajas y desventajas del servicio | Matriz técnica y matriz de decisión ponderada en `docs/comparativa-aks-eks-gke.md` |
 | **Mostrar ejemplos de despliegue de diferentes aplicaciones** | Tres apps en `k8s/` (stateless, microservicios y stateful) desplegadas con `scripts/02-desplegar.sh` |
-| **Video** de mínimo 10 minutos | [Video en YouTube](https://youtu.be/Cu-VVzfo1dg), `docs/guion-video.md` y demos de `scripts/03-demos-operativos.sh` |
+| **Video** de mínimo 10 minutos | [Video en YouTube](https://youtu.be/Cu-VVzfo1dg) y demos de `scripts/03-demos-operativos.sh` |
 | **Comentar** el trabajo de los compañeros con justificación | `docs/comentarios-companeros.md` |
 | **Mapa mental** con los servicios seleccionados por todos | `docs/mapa-mental.md` |
 
@@ -329,7 +328,7 @@ Las apps quedan en `web.<IP>.nip.io` y `vote.<IP>.nip.io`, sin necesidad de un D
 | 3 | **Persistencia** | Se escribe una fila en PostgreSQL y se borra `postgres-0` | El pod vuelve con el mismo disco y la fila sigue ahí |
 | 4 | **Rolling update** | Cambio de imagen a `nginx-unprivileged:1.27-alpine` | Los pods se reemplazan uno a uno, sin downtime |
 | 5 | **Rollback** | `kubectl rollout undo` | Se vuelve a la revisión anterior |
-| 6 | **HPA** | Se baja temporalmente el objetivo de CPU (a mano, con `kubectl patch`; ver `docs/guion-video.md`) y se lanza un generador de carga con 3 réplicas de BusyBox | El HPA sube réplicas en pocos segundos; el manifiesto conserva 50 % y se restaura con `kubectl apply` |
+| 6 | **HPA** | Se baja temporalmente el objetivo de CPU (a mano, con `kubectl patch hpa web-nginx -n web` al 10 %) y se lanza un generador de carga con 3 réplicas de BusyBox | El HPA sube réplicas en pocos segundos; el manifiesto conserva 50 % y se restaura con `kubectl apply` |
 
 <details>
 <summary><b>🔍 Ver la verificación de persistencia</b></summary>
